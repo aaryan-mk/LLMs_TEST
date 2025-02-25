@@ -1,0 +1,21 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "lockfileVersion": 3,
+  "requires": true,
+  "description": "A simple AI assistant chatbot",
+  "type": "module",
+  "packages": {},
+  "devDependencies": {
+    "vite": "^6.2.0"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "serve": "vite preview"
+  },
+  "dependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vue": "^3.5.13"
+  }
+}
