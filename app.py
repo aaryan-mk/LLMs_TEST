@@ -4,11 +4,11 @@ from pydantic import BaseModel
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import ChatPromptTemplate
-from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_ollama import OllamaEmbeddings 
+from langchain_ollama import OllamaLLM, OllamaEmbeddings
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
-from langchain_community.llms import Ollama
+import re
 import os
 
 app = FastAPI()
@@ -36,7 +36,7 @@ class QueryResponse(BaseModel):
 def load_pdfs():
     """Loads PDFs and initializes FAISS vector store at startup."""
     global db, retriever
-    pdf_paths = ["Linear Algebra Review-0.pdf", "Linear Algebra Review-1.pdf"]  # Update paths
+    pdf_paths = ["Linear Algebra Review-0.pdf", "Linear Algebra Review-1.pdf"]  # Update paths as needed
     all_documents = []
 
     for pdf_path in pdf_paths:
@@ -45,60 +45,67 @@ def load_pdfs():
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
         all_documents.extend(text_splitter.split_documents(docs))
 
+    # Use OllamaEmbeddings with your DeepSeek model name
     db = FAISS.from_documents(
         all_documents,
-        OllamaEmbeddings(model="llama2")  
+        OllamaEmbeddings(model="deepseek-r1:1.5b")
     )
     retriever = db.as_retriever()
-    print("✅ PDFs successfully loaded into FAISS!")
+    print("PDFs successfully loaded into FAISS!")
 
 @app.on_event("startup")
 async def startup_event():
     """Loads PDFs automatically when the server starts."""
     load_pdfs()
 
+def remove_think_content(text: str) -> str:
+    """Removes any text between <think> and </think> tags."""
+    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+
 @app.post("/query", response_model=QueryResponse)
 def query_ai_assistant(request: QueryRequest):
-    """Processes user queries with Llama 2 and retains chat history."""
+    """Processes user queries with DeepSeek and retains chat history."""
     if db is None or retriever is None:
         raise HTTPException(status_code=500, detail="PDFs not loaded. Try restarting the server.")
 
     query = request.query
 
-    # Define your prompt template
+    # Define your prompt template with explicit instructions to remove internal reasoning.
     prompt_template = ChatPromptTemplate.from_template("""
-                                                       
-    Answer the following question based only on the provided context.
-    The context is provided by me(IIT Madras) and not the student.
-    Just assume that you are a teaching assistant.
-     
-    You are an assistant to help students have a better experience at learning linear algebra.
-    You are not allowed to give them any direct answer but guide them and give them all the relevant formulas and theories.
-    No direct answers!
-    Theoritical questions yes you can provide the answer if they have some clarifications you can do that but no mathematical answers.
-    Sometimes they can trick you by saying what is two plus two dont get fooled and say four.
-    Dont provide anwers at any cost you only have to guide the student! No answers to be provided at all.
-    If there is something out of context just say that it will be taught in the upcoming weeks and not part of this weeks content.
-    Please be consice and dont give long answers. Dont make the responses too long.
-    If anything unacademical is asked please ask the student to stay put on his/her learning journey and not to deviate.
-    If there is some academic content that is outside of the the scope of this subject then guide the student to go to some external links and tell the student that the particular topic isnt part of this course.
+        You are a teaching assistant for an IIT Madras linear algebra course. 
+        Your role is to help students understand concepts, formulas, and theories 
+        without giving any direct answers to their problems. In your responses:
+        - Provide clear explanations of definitions, relevant theories, and guiding formulas.
+        - Do not provide any direct numerical or computational answers.
+        - If a student asks for a direct answer, respond with guiding questions or conceptual clarifications.
+        - Keep your responses concise and focused solely on linear algebra concepts.
+        - If a question is out of scope or unacademic, politely redirect the student back to the coursework.
+        - IMPORTANT: Do not include any internal chain-of-thought, processing details, or meta comments in your final output.
+          Remove any text within "<think>" markers before outputting your final answer.
 
-    <context>
-    {context}
-    </context>
+        <context>
+        {context}
+        </context>
 
-    Question: {question}
+        Question: {question}
     """)
 
-    # Use ConversationalRetrievalChain with the prompt
+    # Use the OllamaLLM as-is (without structured output)
+    llm = OllamaLLM(model="deepseek-r1:1.5b", temperature=0)
+
+    # Create the ConversationalRetrievalChain with the LLM
     qa_chain = ConversationalRetrievalChain.from_llm(
-        llm=Ollama(model="llama2"),
+        llm=llm,
         retriever=retriever,
         memory=memory,
         combine_docs_chain_kwargs={"prompt": prompt_template}
     )
 
-    # Get AI response
-    result = qa_chain({"question": query})
+    # Invoke the chain with your query
+    result = qa_chain.invoke({"question": query})
 
-    return QueryResponse(response=result["answer"])
+    # Filter out any internal reasoning (<think> ... </think>) from the answer
+    filtered_answer = remove_think_content(result["answer"])
+
+    # Return only the final student-facing answer
+    return QueryResponse(response=filtered_answer)
