@@ -46,10 +46,10 @@ def load_pdfs():
         docs = loader.load()
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
         all_documents.extend(text_splitter.split_documents(docs))
-    # Use OllamaEmbeddings with your DeepSeek model name
+    # Use OllamaEmbeddings with your Llama model name
     db = FAISS.from_documents(
         all_documents,
-        OllamaEmbeddings(model="deepseek-r1:1.5b")
+        OllamaEmbeddings(model="llama3.1:8b")
     )
     retriever = db.as_retriever()
     print("PDFs successfully loaded into FAISS!")
@@ -86,31 +86,35 @@ def query_ai_assistant(request: QueryRequest):
 
     # Build a chat prompt using a system message plus a human message
     system_message = SystemMessagePromptTemplate.from_template("""
-You are a teaching assistant for an IIT Madras linear algebra course.
-Your role is to help students understand concepts, formulas, and theories without giving any direct answers to their problems.
-If any non-academic question is asked, ask the student to focus on the course and do not help them with non-academic topics.
-Provide clear explanations of definitions, relevant theories, and guiding formulas.
-Do not provide any direct numerical or computational answers.
-If a student asks for a direct answer, respond with guiding questions or conceptual clarifications.
-Keep your responses concise and focused solely on linear algebra concepts.
-If a question is out of scope or unacademic, politely redirect the student back to the coursework.
-IMPORTANT: Do not include any internal chain-of-thought, processing details, or meta comments in your final output.
-Remove any text within "<think>" markers before outputting your final answer.
-I only want you to give the answers and nothing more—no think statements.
-""")
+                                                               
+        You are a teaching assistant for an IIT Madras linear algebra course.
+        Your role is to help students understand concepts, formulas, and theories without giving any direct answers to their problems.
+        If any non-academic question is asked, ask the student to focus on the course and do not help them with non-academic topics.
+        Provide clear explanations of definitions, relevant theories, and guiding formulas.
+        Do not provide any direct numerical or computational answers.
+        If a student asks for a direct answer, respond with guiding questions or conceptual clarifications.
+        Keep your responses concise and focused solely on linear algebra concepts.
+        If a question is out of scope or unacademic, politely redirect the student back to the coursework.
+        IMPORTANT: Do not include any internal chain-of-thought, processing details, or meta comments in your final output.
+        Remove any text within "<think>" markers before outputting your final answer.
+        I only want you to give the answers and nothing more—no think statements.
+                                                               
+    """)
 
     human_message = HumanMessagePromptTemplate.from_template("""
-<context>
-{context}
-</context>
+                                                             
+        <context>
+        {context}
+        </context>
 
-Question: {question}
-""")
+        Question: {question}
+                                                             
+    """)
 
     chat_prompt = ChatPromptTemplate.from_messages([system_message, human_message])
 
-    # Use the OllamaLLM with your DeepSeek model.
-    llm = OllamaLLM(model="deepseek-r1:1.5b", temperature=0)
+    # Use the OllamaLLM with your Llama3.1 model.
+    llm = OllamaLLM(model="llama3.1:8b", temperature=0)
 
     # Create the ConversationalRetrievalChain using our custom filtered memory.
     qa_chain = ConversationalRetrievalChain.from_llm(
@@ -124,6 +128,6 @@ Question: {question}
     result = qa_chain.invoke({"question": query})
 
     # Filter out internal reasoning from the final answer before returning.
-    filtered_answer = remove_think_content(result["answer"])
+    filtered_answer = remove_think_content(result["answer"]) # Only if we are using deepseek-r1
 
     return QueryResponse(response=filtered_answer)
