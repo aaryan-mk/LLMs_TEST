@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi import Path
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from langchain.chains import ConversationalRetrievalChain
@@ -30,6 +31,22 @@ app.add_middleware(
 db = None
 retriever = None
 
+PDF_PATHS = [
+    "Linear Algebra Review-0.pdf",
+    "Linear Algebra Review-1.pdf",
+    "week1_rev.pdf",
+    "week2.pdf",
+    "week2_rev.pdf",
+    "week3.pdf",
+    "week3_rev.pdf",
+    "week4_part1.pdf",
+    "week4_part2.pdf",
+    "week4_rev.pdf"
+    # add any other week*.pdf files here
+]
+
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 class QueryRequest(BaseModel):
     query: str
 
@@ -41,9 +58,12 @@ def load_pdfs():
     global db, retriever
     pdf_paths = ["Linear Algebra Review-0.pdf", "Linear Algebra Review-1.pdf"]  # Update paths as needed
     all_documents = []
-    for pdf_path in pdf_paths:
+    for pdf_path in PDF_PATHS:
         loader = PyPDFLoader(pdf_path)
         docs = loader.load()
+        for d in docs:
+            # Normalize source metadata for easy filtering later
+            d.metadata["source"] = os.path.basename(pdf_path)
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
         all_documents.extend(text_splitter.split_documents(docs))
     # Use OllamaEmbeddings with your Llama model name
@@ -130,4 +150,50 @@ def query_ai_assistant(request: QueryRequest):
     # Filter out internal reasoning from the final answer before returning.
     filtered_answer = remove_think_content(result["answer"]) # Only if we are using deepseek-r1
 
+    return QueryResponse(response=filtered_answer)
+
+@app.post("/generate-notes/{week}", response_model=QueryResponse)
+def generate_notes(week: str):
+    if db is None:
+        raise HTTPException(status_code=500, detail="PDFs not loaded.")
+
+    # Find all filenames in PDF_PATHS that contain the week token (case-insensitive)
+    matched = [f for f in PDF_PATHS if week.lower() in f.lower()]
+    if not matched:
+        raise HTTPException(status_code=404, detail=f"No PDFs found for '{week}'")
+
+    # Build a retriever that only returns documents from the matched PDFs.
+    filtered_retriever = db.as_retriever(
+        search_kwargs={"metadata_filter": {"source": {"$in": matched}}}
+    )
+
+    # Updated prompt: instruct the assistant to produce a detailed, structured summary.
+    system_message = SystemMessagePromptTemplate.from_template("""
+        You are an expert summarizer for academic material.
+        Your task is to generate a detailed and well-organized summary of the provided content.
+        Include definitions, key concepts, and clear explanations where applicable.
+        Format your answer using markdown with sections, headings, bullet points, and emphasis as needed.
+    """)
+    human_message = HumanMessagePromptTemplate.from_template("""
+        <context>
+        {context}
+        </context>
+        Using the above context, please provide a detailed summary of the contents for: {question}
+    """)
+    chat_prompt = ChatPromptTemplate.from_messages([system_message, human_message])
+
+    # Use the same LLM configuration as before.
+    llm = OllamaLLM(model="llama3.1:8b", temperature=0)
+
+    # Build the ConversationalRetrievalChain with our custom prompt.
+    qa_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=filtered_retriever,
+        memory=FilteredConversationBufferMemory(memory_key="chat_history", return_messages=True),
+        combine_docs_chain_kwargs={"prompt": chat_prompt}
+    )
+
+    # Invoke the chain using "question" as the input key.
+    result = qa_chain.invoke({"question": f"Provide a detailed summary of the contents of {week}."})
+    filtered_answer = remove_think_content(result["answer"])
     return QueryResponse(response=filtered_answer)
