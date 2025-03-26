@@ -1,0 +1,421 @@
+Course ID: BSCS3001
+Course Level: DEGREE
+Course Name: Software Engineering
+Course Type: Core_BP
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: Y
+  - May2025: Y
+  - Sep2025: Y
+CourseFee: 10K
+
+Course ID: BSCS3002
+Course Level: DEGREE
+Course Name: Software Testing
+Course Type: Core_BP
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: Y
+  - May2025: Y
+  - Sep2025: Y
+CourseFee: 10K
+
+Course ID: BSCS3003
+Course Level: DEGREE
+Course Name: AI: Search Methods for Problem Solving
+Course Type: Core_BP
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: Y
+  - May2025: Y
+  - Sep2025: Y
+CourseFee: 10K
+
+Course ID: BSCS3004
+Course Level: DEGREE
+Course Name: Deep Learning
+Course Type: Core_BD
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: Y
+  - May2025: Y
+  - Sep2025: Y
+CourseFee: 10K
+
+Course ID: BSGN3001
+Course Level: DEGREE
+Course Name: Strategies for Professional Growth
+Course Type: Core_HM
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: Y
+  - May2025: Y
+  - Sep2025: Y
+CourseFee: 10K
+
+Course ID: BSBT4001
+Course Level: L4_DEGREE
+Course Name: Algorithmic Thinking in Bioinformatics
+Course Type: BD/BP
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: N
+  - Jan2025: N
+  - May2025: Y
+  - Sep2025: N
+CourseFee: 20K
+
+Course ID: BSBT4002
+Course Level: L4_DEGREE
+Course Name: Big Data and Biological Networks
+Course Type: BD/BP
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: N
+  - Sep2024: Y
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: Y
+CourseFee: 20K
+
+Course ID: BSCS4001
+Course Level: L4_DEGREE
+Course Name: Data Visualization Design
+Course Type: BD
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: N
+  - May2025: Y
+  - Sep2025: N
+CourseFee: 20K
+
+Course ID: BSEE4001
+Course Level: L4_DEGREE
+Course Name: Speech Technology
+Course Type: BD
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: N
+  - Sep2024: Y
+  - Jan2025: N
+  - May2025: Y
+  - Sep2025: N
+CourseFee: 20K
+
+Course ID: BSMS4002
+Course Level: L4_DEGREE
+Course Name: Design Thinking for Data-Driven App Development
+Course Type: HM/BP
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: N
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: Y
+CourseFee: 20K
+
+Course ID: BSMS4003
+Course Level: L4_DEGREE
+Course Name: Industry 4.0
+Course Type: HM/BD
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: N
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: Y
+CourseFee: 20K
+
+Course ID: BSMS4004
+Course Level: L4_DEGREE
+Course Name: Financial Forensics
+Course Type: HM/BD
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: N
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: Y
+CourseFee: 20K
+
+Course ID: BSMS3002
+Course Level: DEGREE
+Course Name: Market Research
+Course Type: HM
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: N
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: Y
+CourseFee: 10K
+
+Course ID: BSCS4003
+Course Level: L4_DEGREE
+Course Name: Introduction to Big Data
+Course Type: BD/BP
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: N
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: Y
+CourseFee: 10K
+
+Course ID: BSCS4004
+Course Level: L4_DEGREE
+Course Name: Privacy & Security in Online Social Media
+Course Type: BD/BP
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: N
+  - Jan2025: N
+  - May2025: Y
+  - Sep2025: N
+CourseFee: 10K
+
+Course ID: BSMA2001
+Course Level: DEGREE
+Course Name: Mathematical Thinking
+Course Type: SE
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: N
+CourseFee: 10K
+
+Course ID: BSMA2012
+Course Level: DEGREE
+Course Name: Linear Statistical Models
+Course Type: SE
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: N
+CourseFee: 10K
+
+Course ID: BSMA3012
+Course Level: DEGREE
+Course Name: Statistical Computing
+Course Type: SE
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: N
+CourseFee: 10K
+
+Course ID: BSCS4005
+Course Level: L4_DEGREE
+Course Name: Advanced Algorithms
+Course Type: BP
+Co-requisite Code: -
+Prerequisite Code: BSCS3005
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: N
+  - May2025: Y
+  - Sep2025: N
+CourseFee: 20K
+
+Course ID: BSCS3031
+Course Level: DEGREE
+Course Name: Computer Systems Design
+Course Type: BP
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: N
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: Y
+CourseFee: 20K
+
+Course ID: BSCS4022
+Course Level: L4_DEGREE
+Course Name: Operating Systems
+Course Type: BP
+Co-requisite Code: -
+Prerequisite Code: BSCS3031
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: N
+  - May2025: Y
+  - Sep2025: N
+CourseFee: 20K
+
+Course ID: BSCS4002
+Course Level: L4_DEGREE
+Course Name: Special topics in ML (Reinforcement Learning)
+Course Type: BD
+Co-requisite Code: -
+Prerequisite Code: BSCS3004
+Availability:
+  - May2024: Y
+  - Sep2024: N
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: Y
+CourseFee: 20K
+
+Course ID: BSCS5002
+Course Level: DEGREE
+Course Name: Programming in C
+Course Type: -
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: N
+  - May2025: Y
+  - Sep2025: N
+CourseFee: 20K
+
+Course ID: BSCS5003
+Course Level: L5_DEGREE
+Course Name: Introduction to Natural Language Processing (i-NLP)
+Course Type: BD
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: N
+  - May2025: Y
+  - Sep2025: N
+CourseFee: 20K
+
+Course ID: BSCS5005
+Course Level: L5_DEGREE
+Course Name: Deep Learning for Computer Vision
+Course Type: BD
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: Y
+  - May2025: Y
+  - Sep2025: Y
+CourseFee: 20K
+
+Course ID: BSCS5007
+Course Level: L5_DEGREE
+Course Name: Large Language Models
+Course Type: BD
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: Y
+  - Jan2025: Y
+  - May2025: Y
+  - Sep2025: Y
+CourseFee: 20K
+
+Course ID: BSMA3013
+Course Level: DEGREE
+Course Name: Game Theory and Strategy
+Course Type: HM/BD
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: N
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: Y
+CourseFee: 20K
+
+Course ID: BSMS3003
+Course Level: DEGREE
+Course Name: Managerial Economics
+Course Type: HM
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: N
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: Y
+CourseFee: 10K
+
+Course ID: BSMS4001
+Course Level: L4_DEGREE
+Course Name: Corporate Finance
+Course Type: HM
+Co-requisite Code: -
+Prerequisite Code: -
+Availability:
+  - May2024: Y
+  - Sep2024: N
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: Y
+CourseFee: 10K
+
+Course ID: BSDA5013
+Course Level: L5_DEGREE
+Course Name: Deep Learning Practice
+Course Type: BD/BP
+Co-requisite Code: -
+Prerequisite Code: BSCS3004
+Availability:
+  - May2024: Y
+  - Sep2024: N
+  - Jan2025: Y
+  - May2025: N
+  - Sep2025: Y
+CourseFee: 20K
+
+
