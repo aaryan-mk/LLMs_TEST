@@ -57,6 +57,11 @@ class QueryRequest(BaseModel):
     query: str
     history: list = []  # Add a history field to store the conversation history
 
+class VideoQueryRequest(BaseModel):
+    query: str
+    history: list = []  # Add a history field to store the conversation history
+    video: str
+
 class QueryResponse(BaseModel):
     response: str
 
@@ -322,4 +327,78 @@ def recommend_courses(request: QueryRequest):
     history.append({"role": "Bot", "content": filtered_answer})
 
     print("Course Recommender bot responded successfully!")
+    return QueryResponse(response=filtered_answer)
+
+
+@app.post("/query_video", response_model=QueryResponse)
+def query_ai_assistant(request: VideoQueryRequest):
+    """Processes user queries with video transcript context with DeepSeek using a system prompt and filtered output."""
+    print("Entered the Query Video endpoint : query_video")
+
+    query = request.query
+    history = request.history
+    video = request.video
+
+    try:
+        transcript = open("transcripts/" + video + ".txt", "r").read()
+    except e:
+        print("Error reading the video transcript file.")
+        print(e)
+        return {"response": "Error reading the video transcript file."}
+    
+    print("transcript", transcript)
+    # Build a chat prompt using a system message plus a human message
+    system_message = SystemMessagePromptTemplate.from_template(f"""
+        You are a teaching assistant for an IIT Madras linear algebra course.
+        Your role is to help students understand concepts, formulas, and theories without giving any direct answers to their problems.
+        If any non-academic question is asked, ask the student to focus on the course and do not help them with non-academic topics.
+        Provide clear explanations of definitions, relevant theories, and guiding formulas.
+        Do not provide any direct numerical or computational answers.
+        If a student asks for a direct answer, respond with guiding questions or conceptual clarifications.
+        Keep your responses concise and focused solely on a specific video whose transcript is given to you below.
+        If a question is out of scope or unacademic, politely redirect the student back to the content of the video/transcript.
+        IMPORTANT: Do not include any internal chain-of-thought, processing details, or meta comments in your final output.
+        Remove any text within "<think>" markers before outputting your final answer.
+        I only want you to give the answers and nothing more—no think statements.
+        <transcript>
+        {transcript.replace("{", "").replace("}", "")}
+        </transcript>
+    """)
+
+    human_message = HumanMessagePromptTemplate.from_template("""
+        <context>
+        {context}
+        </context>
+
+        Question: {question}
+    """)
+
+    chat_prompt = ChatPromptTemplate.from_messages([system_message, human_message])
+
+    # Use the OllamaLLM with your Llama3.1 model.
+    llm = OllamaLLM(model="llama3.1:8b", temperature=0)
+
+    # Create the ConversationalRetrievalChain using our custom filtered memory.
+    qa_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=retriever,
+        memory=FilteredConversationBufferMemory(memory_key="chat_history", return_messages=True),
+        combine_docs_chain_kwargs={"prompt": chat_prompt}
+    )
+
+    # Combine the user query and history (context) into a single string to pass as the input key
+    # Here, we pass both `context` (history) and `query` (user's current question) together in one string
+    combined_input = " ".join([item["content"] for item in history] + [query])
+
+    # Invoke the chain with the combined context and question (no need for 'context' and 'question' as separate keys)
+    result = qa_chain.invoke({"question": combined_input})
+
+    # Filter out internal reasoning from the final answer before returning.
+    filtered_answer = remove_think_content(result["answer"])
+
+    # Append the user's query and bot's response to history
+    history.append({"role": "User", "content": query})
+    history.append({"role": "Bot", "content": filtered_answer})
+
+    print("Query Transcript Bot responded successfully!")
     return QueryResponse(response=filtered_answer)
