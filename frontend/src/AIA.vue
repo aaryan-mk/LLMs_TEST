@@ -3,8 +3,12 @@
     <h2>General AI Assistant</h2>
     <!-- General Chat Display -->
     <div class="chat-window">
-      <div v-for="(chat, index) in chatHistory" :key="index" class="chat-message">
-        <strong>{{ chat.role }}:</strong> {{ chat.content }}
+      <div
+        v-for="(chat, index) in chatHistory"
+        :key="index"
+        class="chat-message"
+        v-html="formatMessage(chat.content)"
+      >
       </div>
     </div>
 
@@ -17,8 +21,12 @@
     <h2>Course Recommendations</h2>
     <!-- Course Recommendations Chat Display -->
     <div class="chat-window">
-      <div v-for="(chat, index) in courseChatHistory" :key="index" class="chat-message">
-        <strong>{{ chat.role }}:</strong> {{ chat.content }}
+      <div
+        v-for="(chat, index) in courseChatHistory"
+        :key="index"
+        class="chat-message"
+        v-html="formatMessage(chat.content)"
+      >
       </div>
     </div>
 
@@ -88,7 +96,7 @@ export default {
       if (!this.courseQuery) return;
       this.loading = true;
       try {
-        // Combine query with course history for the request
+        // Combine query with history for the request
         const combinedInput = this.courseChatHistory.map((item) => item.content).join(" ") + " " + this.courseQuery;
 
         const res = await fetch("http://127.0.0.1:5000/recommend-courses", {
@@ -130,6 +138,14 @@ export default {
         console.error(`Error generating ${week} notes:`, error);
       }
       this.loading = false;
+    },
+
+    // Method to format message content with Markdown to HTML
+    formatMessage(content) {
+      return content
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold text (**) to <strong>
+        .replace(/\*(.*?)\*/g, "<em>$1</em>") // Italic text (*) to <em>
+        .replace(/\n/g, "<br/>"); // Newlines to <br/> for line breaks
     }
   }
 };
