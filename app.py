@@ -254,24 +254,24 @@ def recommend_courses(request: QueryRequest):
 
         Based on the student's stated interests and preferences, recommend **4–6 courses** from the available courses in `course_availability.txt`.
 
-        You should use your understanding of the general content of the courses (e.g., **Deep Learning** typically involves **neural networks**, **mathematical foundations**, and **algorithm design**, while **Deep Learning Practice** focuses on **practical applications of Deep Learning**).
+        The student has completed **all core courses except BSCS3004 (Deep Learning)**, so recommend **BSCS3004** as it is a **required course** that must be completed before the student can take any electives. If the student hasn't taken it yet, ensure that it is recommended first.
 
         For each recommendation, provide the following:
         - Course Code
         - Course Name
         - Term Offered (from the available data in `course_availability.txt`)
         - Credit Hours
-        - Prerequisites (if any). If not provided, infer a logical sequence of courses that leads to a comprehensive understanding of related concepts.
+        - Prerequisites (if any). If not provided, infer a logical sequence of courses(ONLY THE courses that are available in `course_availability.txt`) that leads to a comprehensive understanding of related concepts.
         - A brief explanation of why this course is a good match based on the student's preferences and inferred learning path.
 
         IMPORTANT:
         - **Only recommend courses that are available in `course_availability.txt`**.
         - **Do not suggest courses outside of the provided data**.
         - **The maximum number of courses the student can take per term is 4**.
-        - If a student has already completed core courses (like **BSCS3001, BSCS3002, BSCS3003, BSCS3004, BSGN3001**), electives can be recommended along with the remaining core courses.
         - The **core courses** (e.g., **BSCS3001 to BSCS3004**) must be prioritized first before electives are suggested.
         - The **electives** should be chosen based on the **student’s preferences** (e.g., if the student likes **maths**, recommend relevant courses like **Deep Learning** or **Mathematical Thinking**).
         - **If no prerequisites are mentioned for a course**, infer a logical learning path (e.g., recommend **Linear Algebra** before **Machine Learning**).
+        - If **BSCS3004 (Deep Learning)** has not been taken by the student yet, it must be included in the course recommendations first, followed by electives.
     """)
 
     # Human prompt with context (conversation history) and query
