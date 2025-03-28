@@ -18,6 +18,21 @@
       <button @click="fetchResponse">Ask</button>
     </div>
 
+    <!-- PDSA -->
+    <h2>PDSA Assistant</h2>
+    <div class="chat-window">
+      <div
+        v-for="(chat, index) in pdsaChatHistory"
+        :key="'pdsa-' + index"
+        class="chat-message"
+        v-html="formatMessage(chat.content)"
+      ></div>
+    </div>
+    <div class="controls">
+      <input v-model="pdsaQuery" placeholder="Ask PDSA question..." />
+      <button @click="fetchPDSAresponse">Ask</button>
+    </div>
+
     <h2>Course Recommendations</h2>
     <!-- Course Recommendations Chat Display -->
     <div class="chat-window">
@@ -44,6 +59,14 @@
       <button @click="generateWeekNotes('week4')">Generate Week4 Notes</button>
     </div>
 
+    <!-- PDSA Week Notes Buttons -->
+    <div class="controls">
+      <button @click="generatePDSAweekNotes('pdsa1')">Generate PDSA Week1 Notes</button>
+      <button @click="generatePDSAweekNotes('pdsa2')">Generate PDSA Week2 Notes</button>
+      <button @click="generatePDSAweekNotes('pdsa3')">Generate PDSA Week3 Notes</button>
+      <button @click="generatePDSAweekNotes('pdsa4')">Generate PDSA Week4 Notes</button>
+    </div>
+
     <div v-if="loading">Loading...</div>
   </div>
 </template>
@@ -53,8 +76,10 @@ export default {
   data() {
     return {
       query: "",                    // User query for general AI assistant
+      pdsaQuery: "",                // User query for PDSA
       courseQuery: "",              // User query for course recommendation
       chatHistory: [],              // History of the general chat (user + bot)
+      pdsaChatHistory: [],          // History of the PDSA chat (user + bot)
       courseChatHistory: [],        // History of the course recommendation chat (user + bot)
       loading: false
     };
@@ -68,7 +93,7 @@ export default {
         // Combine query with history for the request
         const combinedInput = this.chatHistory.map((item) => item.content).join(" ") + " " + this.query;
 
-        const res = await fetch("http://127.0.0.1:5000/query", {
+        const res = await fetch("http://127.0.0.1:8000/query", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -91,6 +116,36 @@ export default {
       this.loading = false;
     },
 
+    async fetchPDSAresponse() {
+      if (!this.pdsaQuery) return;
+      this.loading = true;
+      try {
+        // Combine query with history for the request
+        const combinedInput = this.pdsaChatHistory.map((item) => item.content).join(" ") + " " + this.pdsaQuery;
+
+        const res = await fetch("http://127.0.0.1:8000/query-pdsa", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: combinedInput,  // Send combined input
+            history: this.pdsaChatHistory // Sending the chat history with the query
+          })
+        });
+
+        const data = await res.json();
+
+        // Add user query and bot response to general chat history
+        this.pdsaChatHistory.push({ role: "User", content: this.pdsaQuery });
+        this.pdsaChatHistory.push({ role: "Bot", content: data.response });
+
+        // Clear the query input field after sending the request
+        this.pdsaQuery = "";
+      } catch (error) {
+        console.error("Error fetching response:", error);
+      }
+      this.loading = false;
+      },
+
     // Fetch course recommendations, including course chat history
     async fetchCourseRecommendation() {
       if (!this.courseQuery) return;
@@ -99,7 +154,7 @@ export default {
         // Combine query with history for the request
         const combinedInput = this.courseChatHistory.map((item) => item.content).join(" ") + " " + this.courseQuery;
 
-        const res = await fetch("http://127.0.0.1:5000/recommend-courses", {
+        const res = await fetch("http://127.0.0.1:8000/recommend-courses", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -126,7 +181,7 @@ export default {
     async generateWeekNotes(week) {
       this.loading = true;
       try {
-        const res = await fetch(`http://127.0.0.1:5000/generate-notes/${week}`, {
+        const res = await fetch(`http://127.0.0.1:8000/generate-notes/${week}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" }
         });
@@ -140,12 +195,29 @@ export default {
       this.loading = false;
     },
 
+    async generatePDSAweekNotes(week) {
+      this.loading = true;
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/generate-notes-pdsa/${week}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.json();
+
+        // Add generated notes as bot messages to general chat history
+        this.pdsaChatHistory.push({ role: "Bot", content: data.response });
+      } catch (error) {
+        console.error(`Error generating ${week} notes:`, error);
+      }
+      this.loading = false;
+    },
+
     // Method to format message content with Markdown to HTML
     formatMessage(content) {
       return content
-        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold text (**) to <strong>
-        .replace(/\*(.*?)\*/g, "<em>$1</em>") // Italic text (*) to <em>
-        .replace(/\n/g, "<br/>"); // Newlines to <br/> for line breaks
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.*?)\*/g, "<em>$1</em>")
+        .replace(/\n/g, "<br/>");
     }
   }
 };

@@ -29,6 +29,7 @@ app.add_middleware(
 
 # Global vector store and retriever
 db = None
+pdsa_db = None
 retriever = None
 
 # Set the path for saving the FAISS index (this index contains precomputed embeddings)
@@ -45,8 +46,18 @@ PDF_PATHS = [
     "week3_rev.pdf",
     "week4_part1.pdf",
     "week4_part2.pdf",
-    "week4_rev.pdf",
-    "course_availability.txt"  # Add your course availability file
+    "week4_rev.pdf"
+    # Add your course availability file
+]
+
+PDSA_INDEX_PATH = "faiss_index_pdsa"
+print("It went till here")
+PDSA_PDF_PATHS = [
+    "pdsa1.pdf",
+    "pdsa2.pdf",
+    "pdsa3.pdf",
+    "pdsa4.pdf"
+    # Add more if needed
 ]
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -56,6 +67,11 @@ print("DEBUG: This is the top of app.py file.")
 class QueryRequest(BaseModel):
     query: str
     history: list = []  # Add a history field to store the conversation history
+
+class VideoQueryRequest(BaseModel):
+    query: str
+    history: list = []  # Add a history field to store the conversation history
+    video: str
 
 class QueryResponse(BaseModel):
     response: str
@@ -72,6 +88,7 @@ def load_pdfs():
         retriever = db.as_retriever()
         print("FAISS index loaded successfully!")
         return
+    
 
     print("Index file not found proceeding to create embeddings...")
     all_documents = []
@@ -99,11 +116,46 @@ def load_pdfs():
     elapsed_time = end_time - start_time
     print(f"FAISS index created and saved successfully @ {INDEX_PATH} in {elapsed_time:.2f} seconds!")
 
+def load_pdsa_pdfs():
+    global pdsa_db, retriever
+    print("Checking if indexing already exists for FAISS")
+    if os.path.exists(PDSA_INDEX_PATH):
+        embeddings = OllamaEmbeddings(model="llama3.1:8b")
+        pdsa_db = FAISS.load_local(PDSA_INDEX_PATH, embeddings, allow_dangerous_deserialization=True)
+        retriever = pdsa_db.as_retriever()
+        print("FAISS Pdsa index loaded successfully!")
+        return 
+    
+    print("Index file not found proceeding to create embeddings for pdsa...")
+    all_docs = []
+    for path in PDSA_PDF_PATHS:
+        if path.lower().endswith(".pdf"):
+            loader = PyPDFLoader(path)
+        else:
+            continue
+        docs = loader.load()
+        for d in docs:
+            d.metadata["source"] = os.path.basename(path)
+        splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
+        all_docs.extend(splitter.split_documents(docs))
+
+    print("Computing embeddings(pdsa) for all documents (this may take a while)...")
+    start_time = time.time()
+    embeddings = OllamaEmbeddings(model="llama3.1:8b")
+    pdsa_db = FAISS.from_documents(all_docs, embeddings)
+    retriever = pdsa_db.as_retriever()
+    db.save_local(PDSA_INDEX_PATH)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"FAISS index created and saved successfully @ {PDSA_INDEX_PATH} in {elapsed_time:.2f} seconds!")
+    pdsa_db.save_local(PDSA_INDEX_PATH)
+
 @app.on_event("startup")
 async def startup_event():
     """Loads PDFs automatically when the server starts."""
     print("Starting up the app and loading document embeddings...")
     load_pdfs()
+    load_pdsa_pdfs()
 
 def remove_think_content(text: str) -> str:
     """Removes any text between <think> and </think> tags."""
@@ -123,7 +175,6 @@ class FilteredConversationBufferMemory(ConversationBufferMemory):
 
 @app.post("/query", response_model=QueryResponse)
 def query_ai_assistant(request: QueryRequest):
-    """Processes user queries with DeepSeek using a system prompt and filtered output."""
     print("Entered the academic helper endpoint : query")
     if db is None or retriever is None:
         raise HTTPException(status_code=500, detail="PDFs not loaded. Try restarting the server.")
@@ -133,14 +184,16 @@ def query_ai_assistant(request: QueryRequest):
 
     # Build a chat prompt using a system message plus a human message
     system_message = SystemMessagePromptTemplate.from_template("""
-        You are a teaching assistant for an IIT Madras linear algebra course.
+        Do not use your global knowledge base to answer the question. Use only the knowledge base that is given to you.
+        You are a teaching assistant for an IIT Madras Machine Learning Techniques course.
         Your role is to help students understand concepts, formulas, and theories without giving any direct answers to their problems.
         If any non-academic question is asked, ask the student to focus on the course and do not help them with non-academic topics.
         Provide clear explanations of definitions, relevant theories, and guiding formulas.
         Do not provide any direct numerical or computational answers.
         If a student asks for a direct answer, respond with guiding questions or conceptual clarifications.
         Keep your responses concise and focused solely on linear algebra concepts.
-        If a question is out of scope or unacademic, politely redirect the student back to the coursework.
+        If a question is out of scope(out of given context in retriever) or unacademic, politely redirect the student back to the coursework.
+        If a question is specifically asked out of context that is given to you do not use your global knowledge base to answer the question.
         IMPORTANT: Do not include any internal chain-of-thought, processing details, or meta comments in your final output.
         Remove any text within "<think>" markers before outputting your final answer.
         I only want you to give the answers and nothing more—no think statements.
@@ -182,6 +235,74 @@ def query_ai_assistant(request: QueryRequest):
     history.append({"role": "Bot", "content": filtered_answer})
 
     print("Academic helper responded successfully!")
+    return QueryResponse(response=filtered_answer)
+
+@app.post("/query-pdsa", response_model=QueryResponse)
+def query_pdsa_assistant(request: QueryRequest):
+    print("Entered the PDSA assistant endpoint")
+
+    text_index_path = "faiss_index_pdsa"  # Path to the FAISS index
+    embeddings = OllamaEmbeddings(model="llama3.1:8b")
+
+    try:
+        print("Dynamically loading the embeddings for the text docx...")
+        db = FAISS.load_local(text_index_path, embeddings, allow_dangerous_deserialization=True)  # Load FAISS index
+        retriever = db.as_retriever()  # Use the retriever for course search
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error loading FAISS index: {e}")
+
+    print("Dynamic loading successfull!")
+
+    if pdsa_db is None or retriever is None:
+        raise HTTPException(status_code=500, detail="PDSA PDFs not loaded. Try restarting the server.")
+
+    history = request.history
+    query = request.query
+
+    system_message = SystemMessagePromptTemplate.from_template("""
+        Do not use your global knowledge base to answer the question. Use only the knowledge base that is given to you.
+        You are a teaching assistant for an IIT Programming and Data Structures and Algorithms in Python(PDSA) course.
+        Your role is to help students understand concepts, formulas, and theories without giving any direct answers to their problems.
+        If any non-academic question is asked, ask the student to focus on the course and do not help them with non-academic topics.
+        Provide clear explanations of definitions, relevant theories, and guiding formulas.
+        Do not provide any direct numerical or computational answers.
+        If a student asks for a direct answer, respond with guiding questions or conceptual clarifications.
+        If a question is out of scope(out of given context in retriever) or unacademic, politely redirect the student back to the coursework.
+        If a question is specifically asked out of context that is given to you do not use your global knowledge base to answer the question.
+        IMPORTANT: Do not include any internal chain-of-thought, processing details, or meta comments in your final output.
+        Remove any text within "<think>" markers before outputting your final answer.
+        I only want you to give the answers and nothing more—no think statements.
+    """)
+
+    human_message = HumanMessagePromptTemplate.from_template("""
+        <context>
+        {context}
+        </context>
+        Question: {question}
+    """)
+
+    chat_prompt = ChatPromptTemplate.from_messages([system_message, human_message])
+
+    llm = OllamaLLM(model="llama3.1:8b", temperature=0)
+
+    qa_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=retriever,
+        memory=FilteredConversationBufferMemory(memory_key="chat_history", return_messages=True),
+        combine_docs_chain_kwargs={"prompt": chat_prompt}
+    )
+
+    combined_input = " ".join([item["content"] for item in history] + [query])
+
+    result = qa_chain.invoke({"question": combined_input})
+
+    filtered_answer = remove_think_content(result["answer"])
+
+    history.append({"role": "User", "content": query})
+    history.append({"role": "Bot", "content": filtered_answer})
+
+    print("PDSA assistant responded successfully!")
+
     return QueryResponse(response=filtered_answer)
 
 @app.post("/generate-notes/{week}", response_model=QueryResponse)
@@ -226,12 +347,52 @@ def generate_notes(week: str):
     print("Summarizer bot responded successfully!")
     return QueryResponse(response=filtered_answer)
 
+@app.post("/generate-notes-pdsa/{week}", response_model=QueryResponse)
+def generate_notes_pdsa(week: str):
+    print("Entered PDSA notes summary bot...")
+    if pdsa_db is None:
+        raise HTTPException(status_code=500, detail="PDSA PDFs not loaded.")
+    
+    matched = [f for f in PDSA_PDF_PATHS if week.lower() in f.lower()]
+    if not matched:
+        raise HTTPException(status_code=404, detail=f"No PDFs found for '{week}'")
+
+    filtered_retriever = pdsa_db.as_retriever(
+        search_kwargs={"metadata_filter": {"source": {"$in": matched}}}
+    )
+
+    system_message = SystemMessagePromptTemplate.from_template("""
+        You are an assistant tasked with generating a detailed summary of Python and DSA course content.
+        Include syntax, example snippets, complexity notes, and key algorithm insights.
+    """)
+
+    human_message = HumanMessagePromptTemplate.from_template("""
+        <context>
+        {context}
+        </context>
+        Summarize the above for: {question}
+    """)
+
+    chat_prompt = ChatPromptTemplate.from_messages([system_message, human_message])
+    llm = OllamaLLM(model="llama3.1:8b", temperature=0)
+
+    qa_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=filtered_retriever,
+        memory=FilteredConversationBufferMemory(memory_key="chat_history", return_messages=True),
+        combine_docs_chain_kwargs={"prompt": chat_prompt}
+    )
+
+    result = qa_chain.invoke({"question": f"Provide a detailed summary of the contents of {week}"})
+    filtered_answer = remove_think_content(result["answer"])
+    return QueryResponse(response=filtered_answer)
+
 @app.post("/recommend-courses", response_model=QueryResponse)
 def recommend_courses(request: QueryRequest):
     print("Entered course recommender bot...")
 
     # Dynamically load FAISS index and retriever only when the endpoint is called
-    text_index_path = "faiss_index_textfile_backup"  # Path to the FAISS index
+    text_index_path = "faiss_recommen"  # Path to the FAISS index
     embeddings = OllamaEmbeddings(model="llama3.1:8b")
     
     try:
@@ -250,12 +411,11 @@ def recommend_courses(request: QueryRequest):
     # Build a system message for course recommendation
     system_prompt = SystemMessagePromptTemplate.from_template("""
         You are an academic advisor bot for an IIT Madras program.
-        You have access to the official course availability data from `course_availability.txt` (which has been embedded for easy search).
 
         Based on the student's stated interests and preferences, recommend **4–6 courses** from the available courses in `course_availability.txt`.
 
         The student has completed **all core courses except BSCS3004 (Deep Learning)**, so recommend **BSCS3004** as it is a **required course** that must be completed before the student can take any electives. If the student hasn't taken it yet, ensure that it is recommended first.
-
+        Also familiarise yourself with all the course codes and their abbreviations.
         For each recommendation, provide the following:
         - Course Code
         - Course Name
@@ -268,7 +428,6 @@ def recommend_courses(request: QueryRequest):
         - **Only recommend courses that are available in `course_availability.txt`**.
         - **Do not suggest courses outside of the provided data**.
         - **The maximum number of courses the student can take per term is 4**.
-        - The **core courses** (e.g., **BSCS3001 to BSCS3004**) must be prioritized first before electives are suggested.
         - The **electives** should be chosen based on the **student’s preferences** (e.g., if the student likes **maths**, recommend relevant courses like **Deep Learning** or **Mathematical Thinking**).
         - **If no prerequisites are mentioned for a course**, infer a logical learning path (e.g., recommend **Linear Algebra** before **Machine Learning**).
         - If **BSCS3004 (Deep Learning)** has not been taken by the student yet, it must be included in the course recommendations first, followed by electives.
@@ -323,3 +482,5 @@ def recommend_courses(request: QueryRequest):
 
     print("Course Recommender bot responded successfully!")
     return QueryResponse(response=filtered_answer)
+
+
